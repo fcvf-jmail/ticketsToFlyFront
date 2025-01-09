@@ -3,7 +3,7 @@ const { inlineKeyboard } = require("telegraf/markup");
 
 const filterKeyboard = [
     [{ text: "💰 Максимальная цена", callback_data: "set_max_price" }],
-    [{ text: "📦 Минимальный багаж", callback_data: "set_min_baggage" }],
+    [{ text: "📦 Минимальный вес багажа", callback_data: "set_min_baggage" }],
     [{ text: "🧳 Минимальный вес ручной клади", callback_data: "set_min_hand_luggage" }],
     [{ text: "🔁 Количество пересадок", callback_data: "set_transfers" }],
     [{ text: "⏳ Время в полете", callback_data: "set_flight_time" }],
@@ -56,14 +56,7 @@ const createSubscriptionScene = new Scenes.WizardScene(
             "🎛 Выбери фильтры для поиска билетов:\n\nУкажи свои предпочтения, чтобы я нашел для тебя идеальный билет!",
             {
                 reply_markup: {
-                    inline_keyboard: [
-                        [{ text: "💰 Максимальная цена", callback_data: "set_max_price" }],
-                        [{ text: "📦 Минимальный багаж", callback_data: "set_min_baggage" }],
-                        [{ text: "🧳 Минимальный вес ручной клади", callback_data: "set_min_hand_luggage" }],
-                        [{ text: "🔁 Количество пересадок", callback_data: "set_transfers" }],
-                        [{ text: "⏳ Время в полете", callback_data: "set_flight_time" }],
-                        [{ text: "✅ Завершить настройки", callback_data: "finish_subscription" }],
-                    ],
+                    inline_keyboard: filterKeyboard,
                     resize_keyboard: true,
                 },
             }
