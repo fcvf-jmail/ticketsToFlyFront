@@ -1,6 +1,9 @@
 const { Scenes, Markup } = require("telegraf");
 const { inlineKeyboard } = require("telegraf/markup");
 
+const cancelButton = {text: "❌ Отмена", callback_data: "cancel_subscription"}
+const backButton = {text: "🔙 Назад", callback_data: "back"}
+
 const filterKeyboard = [
     [{ text: "💰 Максимальная цена", callback_data: "set_max_price" }],
     [{ text: "📦 Минимальный вес багажа", callback_data: "set_min_baggage" }],
@@ -8,20 +11,25 @@ const filterKeyboard = [
     [{ text: "🔁 Количество пересадок", callback_data: "set_transfers" }],
     [{ text: "⏳ Время в полете", callback_data: "set_flight_time" }],
     [{ text: "✅ Завершить настройки", callback_data: "finish_subscription" }],
+    [cancelButton]
 ]
+
 
 // Сцена для создания подписки
 const createSubscriptionScene = new Scenes.WizardScene(
     "createSubscription",
     async (ctx) => {
-        await ctx.reply("🌃 Укажи город вылета:\n\nНапример: Москва, Санкт-Петербург или любой другой");
+        if(ctx?.callbackQuery?.data == "cancel_subscription") return cancelSubscription(ctx)
+        await ctx.reply("🌃 Укажи город вылета:\n\nНапример: Москва, Санкт-Петербург или любой другой", {reply_markup: {inline_keyboard: [[cancelButton]], resize_keyboard: true} });
         return ctx.wizard.next();
     },
     async (ctx) => {
+        if(ctx?.callbackQuery?.data == "cancel_subscription") return cancelSubscription(ctx)
         await ctx.reply(
             `🛫 Вот какие варианты аэропортов я могу предложить:\n\nВыбери подходящий:`,
             {
                 reply_markup: {
+                    resize_keyboard: true,
                     inline_keyboard: [
                         [
                             { text: "Домодедово", callback_data: "Домодедово" },
@@ -33,7 +41,8 @@ const createSubscriptionScene = new Scenes.WizardScene(
                         ],
                         [
                             { text: "Любой 🌟", callback_data: "Любой" },
-                        ]
+                        ],
+                        [cancelButton]
                     ],
                 },
             }
@@ -41,17 +50,20 @@ const createSubscriptionScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
     async (ctx) => {
+        if(ctx?.callbackQuery?.data == "cancel_subscription") return cancelSubscription(ctx)
         ctx.scene.state.departureAirport = ctx.callbackQuery.data;
-        await ctx.reply("🌇 Укажи город прибытия:\n\nНапример: Париж, Берлин, Лондон, можно даже Саратов");
+        await ctx.reply("🌇 Укажи город прибытия:\n\nНапример: Париж, Берлин, Лондон, можно даже Саратов", {reply_markup: {inline_keyboard: [[cancelButton]], resize_keyboard: true} });
         return ctx.wizard.next();
     },
     async (ctx) => {
+        if(ctx?.callbackQuery?.data == "cancel_subscription") return cancelSubscription(ctx)
         ctx.scene.state.arrivalCity = ctx.message.text;
-        await ctx.reply("📅 Укажи интервал поиска билетов в формате:\n\n`дд.мм.гггг - дд.мм.гггг`\n\n⚠️ <b>Важно:</b> максимальный интервал — 7 дней!", { parse_mode: "HTML" });
+        await ctx.reply("📅 Укажи интервал поиска билетов в формате:\n\n`дд.мм.гггг - дд.мм.гггг`\n\n⚠️ <b>Важно:</b> максимальный интервал — 7 дней!", { parse_mode: "HTML", reply_markup: {inline_keyboard: [[cancelButton]], resize_keyboard: true} });
         return ctx.wizard.next();
     },
     async (ctx) => {
-        ctx.scene.state.dateRange = ctx.message.text;
+        if(ctx?.callbackQuery?.data == "cancel_subscription") return cancelSubscription(ctx)
+        if(ctx?.message?.text) ctx.scene.state.dateRange = ctx.message.text;
         await ctx.reply(
             "🎛 Выбери фильтры для поиска билетов:\n\nУкажи свои предпочтения, чтобы я нашел для тебя идеальный билет!",
             {
@@ -61,38 +73,42 @@ const createSubscriptionScene = new Scenes.WizardScene(
                 },
             }
         );
-        return ctx.wizard.next();
+        ctx.wizard.next();
+        // return ctx.wizard.steps[ctx.wizard.cursor](ctx);
     },
     async (ctx) => {
+        if(ctx?.callbackQuery?.data == "back") {
+            ctx.wizard.back();
+            // Вызываем предыдущий шаг заново
+            return ctx.wizard.steps[ctx.wizard.cursor](ctx);
+        }
+        if(ctx?.callbackQuery?.data == "cancel_subscription") return cancelSubscription(ctx)
         const selectedOption = ctx.callbackQuery.data;
         switch (selectedOption) {
             case "set_max_price":
-                await ctx.reply(
-                    "💰 Укажи максимальную стоимость билета в рублях:\n\nНапример: 5000, 10000 или другой подходящий бюджет"
-                );
+                await ctx.reply("💰 Укажи максимальную стоимость билета в рублях:\n\nНапример: 5000, 10000 или другой подходящий бюджет", {reply_markup: {inline_keyboard: [[backButton]], resize_keyboard: true}});
                 ctx.scene.state.setting = "maxPrice";
-
                 break;
             case "set_min_baggage":
-                await ctx.reply(`📦 Укажи минимальный вес багажа (в килограммах):\n\nСкажу тебе по секрету, у большинства авиакомпаний стандартный вес багажа — 20 килограмм\n\n`, { parse_mode: "HTML" });
+                await ctx.reply(`📦 Укажи минимальный вес багажа (в килограммах):\n\nСкажу тебе по секрету, у большинства авиакомпаний стандартный вес багажа — 20 килограмм\n\n`, { parse_mode: "HTML", reply_markup: {inline_keyboard: [[backButton]], resize_keyboard: true}});
                 ctx.scene.state.setting = "minBaggage";
                 break;
             case "set_min_hand_luggage":
                 await ctx.reply(
                     `🧳 Укажи минимальный вес ручной клади (в килограммах):\n\nФан факт: стандартный вес ручной клади составляет 5 килограм`,
-                    { parse_mode: "HTML" }
+                    { parse_mode: "HTML", reply_markup: {inline_keyboard: [[backButton]], resize_keyboard: true}}
                 );
                 ctx.scene.state.setting = "minHandLuggage";
                 break;
             case "set_transfers":
                 await ctx.reply(
-                    "🔁 Укажи максимальное количество пересадок:\n\nНапример: 0 (без пересадок), 1 (одна пересадка) или 2 (две пересадки)."
+                    "🔁 Укажи максимальное количество пересадок:\n\nНапример: 0 (без пересадок), 1 (одна пересадка) или 2 (две пересадки)", {reply_markup: {inline_keyboard: [[backButton]], resize_keyboard: true}}
                 );
                 ctx.scene.state.setting = "transfers";
                 break;
             case "set_flight_time":
                 await ctx.reply(
-                    "⏳ Укажи максимально допустимое время в полете (в часах):\n\n Например: 4, 6 или 8 часов."
+                    "⏳ Укажи максимально допустимое время в полете (в часах):\n\n Например: 4, 6 или 8 часов", {reply_markup: {inline_keyboard: [[backButton]], resize_keyboard: true}}
                 );
                 ctx.scene.state.setting = "flightTime";
                 break;
@@ -123,7 +139,12 @@ const createSubscriptionScene = new Scenes.WizardScene(
         return ctx.wizard.next();
     },
     async (ctx) => {
-        const value = ctx.message.text;
+        console.log
+        if(ctx?.callbackQuery?.data == "cancel_subscription") return cancelSubscription(ctx)
+            if(ctx?.callbackQuery?.data == "back") {
+                ctx.wizard.back();
+                return ctx.wizard.steps[ctx.wizard.cursor](ctx);
+            }
         const setting = ctx.scene.state.setting;
         if(!ctx.scene.state.filters) ctx.scene.state.filters = {}
         ctx.scene.state.filters[setting] = value;
@@ -151,5 +172,11 @@ const createSubscriptionScene = new Scenes.WizardScene(
         return ctx.wizard.back();
     }
 );
+
+async function cancelSubscription(ctx) {
+    ctx.scene.session.state = {};
+    await ctx.reply("⛔️ Добавление подписки отменено. Для возвращения в главное меню используй команду /start")
+    return await ctx.scene.leave();
+}
 
 module.exports = { createSubscriptionScene };
