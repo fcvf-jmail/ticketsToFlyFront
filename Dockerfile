@@ -2,7 +2,7 @@
 FROM node:20-slim
 
 # Устанавливаем рабочую директорию в контейнере
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Копируем package.json и package-lock.json (если есть)
 COPY package*.json ./
